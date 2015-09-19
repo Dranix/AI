@@ -3,6 +3,7 @@ package Tank;
 import robocode.*;
 
 import java.awt.Color;
+import java.awt.Graphics2D;
 import java.io.IOException;
 
 import Tank.Point;
@@ -21,11 +22,12 @@ public class SmartTank extends TeamRobot {
 				out.println("Unable to send order: ");
 				ex.printStackTrace(out);
 			}
-
-			setTurnRadarRight(360);
-			fire(2);
+		
+			informationList.PrintRecord();
+			
 			execute();
 		}
+
 	}
 
 	/**
@@ -33,29 +35,7 @@ public class SmartTank extends TeamRobot {
 	 */
 	public void onScannedRobot(ScannedRobotEvent e) {
 		// Save enemy movement to local database and send to team mate
-		SaveEnemyMovements(e, true);
-
-		// Don't fire on teammates
-		if (isTeammate(e.getName())) {
-			return;
-		} else {
-			// TODO: Add avoid bullet mechanism
-
-			if (e.getDistance() > 100) {
-				turnRight(e.getBearing());
-				ahead(150);
-				fire(1);
-			} else if (e.getDistance() < 100) {
-				turnRight(e.getBearing());
-				fire(2);
-				ahead(50);
-			} else if (e.getDistance() < 50) {
-				turnRight(e.getBearing());
-				fire(3);
-			}
-		}
-
-		execute();
+		SaveEnemyMovements(this, e);
 	}
 
 	public void onMessageReceived(MessageEvent e) {
@@ -63,13 +43,18 @@ public class SmartTank extends TeamRobot {
 			Message message = (Message) e.getMessage();
 			switch (message.getMessageType()) {
 			case SendEnemyInformation:
-				SaveEnemyMovements((ScannedRobotEvent) message.getMessageObject(), false);
+				informationList.AddInformation((TankInformation) message.getMessageObject());
 				break;
 
 			default:
 				break;
 			}
 		}
+	}
+
+	public void onPaint(Graphics2D g) {
+		g.setColor(java.awt.Color.GREEN);
+		informationList.PrintLocation(g);
 	}
 
 	private void InitTank() {
@@ -82,17 +67,14 @@ public class SmartTank extends TeamRobot {
 		informationList = new TankInformationList();
 	}
 
-	private void SaveEnemyMovements(ScannedRobotEvent e, boolean isBroadcast) {
+	private void SaveEnemyMovements(TeamRobot ourRobot, ScannedRobotEvent e) {
 		if (isTeammate(e.getName())) {
 			return;
 		}
-		
-		// Save to database
-		informationList.AddInformation(this, e);
 
-		if (isBroadcast) {
-			SendMessage(new Message(MessageType.SendEnemyInformation, e));
-		}
+		// Save to database
+		TankInformation info = informationList.AddInformation(ourRobot, e);
+		SendMessage(new Message(MessageType.SendEnemyInformation, info));
 	}
 
 	private void SendMessage(Message message) {
