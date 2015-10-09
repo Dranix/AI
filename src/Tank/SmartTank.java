@@ -1,38 +1,22 @@
 package Tank;
 
-import robocode.*;
-
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import Tank.Point;
+import robocode.MessageEvent;
+import robocode.ScannedRobotEvent;
+import robocode.TeamRobot;
 
 public class SmartTank extends TeamRobot {
-	private TankInformationList informationList;
+	protected List<EnemyTank> enemyTankList;
 
 	public void run() {
 		InitTank();
-
-		while (true) {
-			try {
-				// Send enemy position to team mates
-				broadcastMessage(new Point(getX(), getY()));
-			} catch (IOException ex) {
-				out.println("Unable to send order: ");
-				ex.printStackTrace(out);
-			}
-		
-			informationList.PrintRecord();
-			
-			execute();
-		}
-
 	}
 
-	/**
-	 * onScannedRobot: What to do when you see another robot
-	 */
 	public void onScannedRobot(ScannedRobotEvent e) {
 		// Save enemy movement to local database and send to team mate
 		SaveEnemyMovements(this, e);
@@ -43,7 +27,12 @@ public class SmartTank extends TeamRobot {
 			Message message = (Message) e.getMessage();
 			switch (message.getMessageType()) {
 			case SendEnemyInformation:
-				informationList.AddInformation((TankInformation) message.getMessageObject());
+				EnemyTank enemy = (EnemyTank) message.getMessageObject();
+				for (EnemyTank eTank : enemyTankList) {
+					if (eTank.get_name().equals(enemy.get_name())) {
+						eTank.updateFromTeamate(enemy);
+					}
+				}
 				break;
 
 			default:
@@ -53,8 +42,7 @@ public class SmartTank extends TeamRobot {
 	}
 
 	public void onPaint(Graphics2D g) {
-		g.setColor(java.awt.Color.GREEN);
-		informationList.PrintLocation(g);
+
 	}
 
 	private void InitTank() {
@@ -64,7 +52,7 @@ public class SmartTank extends TeamRobot {
 		setScanColor(Color.black);
 		setBulletColor(Color.black);
 
-		informationList = new TankInformationList();
+		enemyTankList = new ArrayList<EnemyTank>();
 	}
 
 	private void SaveEnemyMovements(TeamRobot ourRobot, ScannedRobotEvent e) {
@@ -72,9 +60,24 @@ public class SmartTank extends TeamRobot {
 			return;
 		}
 
-		// Save to database
-		TankInformation info = informationList.AddInformation(ourRobot, e);
-		SendMessage(new Message(MessageType.SendEnemyInformation, info));
+		// check if exist
+		if (enemyTankList.size() == 0) {
+			EnemyTank newEnemy = new EnemyTank(ourRobot, e);
+
+			enemyTankList.add(newEnemy);
+		} else {
+			for (EnemyTank enemy : enemyTankList) {
+				if (enemy == null || !e.getName().equals(enemy.get_name())) {
+					EnemyTank newEnemy = new EnemyTank(ourRobot, e);
+
+					enemyTankList.add(newEnemy);
+				} else if (e.getName().equals(enemy.get_name())) {
+					enemy.update(ourRobot, e);
+					SendMessage(new Message(MessageType.SendEnemyInformation, enemy));
+				}
+			}
+		}
+
 	}
 
 	private void SendMessage(Message message) {
