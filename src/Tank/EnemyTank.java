@@ -41,6 +41,7 @@ public class EnemyTank implements java.io.Serializable {
 	private int ourY;
 	private int turn;
 	private List<HistoryPoint> history;
+	private boolean isFocus;
 
 	double getX() {
 		return x;
@@ -219,5 +220,13 @@ public class EnemyTank implements java.io.Serializable {
 
 	public void setOurY(int ourY) {
 		this.ourY = ourY;
+	}
+
+	public boolean isFocus() {
+		return isFocus;
+	}
+
+	public void setFocus(boolean isFocus) {
+		this.isFocus = isFocus;
 	}
 }
