@@ -7,7 +7,13 @@ public class TankMember extends SmartTank {
 	public void run() {
 		super.run();
 
-		ahead(1000);
+		while (true) {
+			if (getFocusTarget() != null) {
+				out.println(getFocusTarget().get_name());
+			}
+
+			execute();
+		}
 	}
 
 	public void onScannedRobot(ScannedRobotEvent e) {
@@ -16,5 +22,20 @@ public class TankMember extends SmartTank {
 
 	public void onMessageReceived(MessageEvent e) {
 		super.onMessageReceived(e);
+		if (e.getMessage() instanceof Message) {
+			Message message = (Message) e.getMessage();
+			switch (message.getMessageType()) {
+			case SendFocusTarget:
+				String focusName = (String) message.getMessageObject();
+				EnemyTank focusTank = getEnemyTankByName(focusName);
+				if (focusTank != null) {
+					setFocusTarget(focusTank);
+				}
+				break;
+
+			default:
+				break;
+			}
+		}
 	}
 }

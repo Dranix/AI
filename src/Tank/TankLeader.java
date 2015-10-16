@@ -2,12 +2,17 @@ package Tank;
 
 import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
+import java.util.Collections;
 
 import robocode.MessageEvent;
-import robocode.RobotDeathEvent;
 import robocode.ScannedRobotEvent;
 
 public class TankLeader extends SmartTank {
+	private static final int distanceMin = 200;
+	private static final int distanceMax = 300;
+	private static final int energyRequireToFire = 10;
+	private static final int energyRequireToSetFire = 50;
+
 	private int fx;
 	private int fy;
 	private int moveDirection = 1;
@@ -18,17 +23,21 @@ public class TankLeader extends SmartTank {
 		phase = Phase.LeaderPhase1;
 
 		while (true) {
+			if (getFocusTarget() != null) {
+				out.println(getFocusTarget().get_name());
+			}
+
 			switch (phase) {
 			case LeaderPhase1:
-				LeaderTankPhase1();
+				leaderTankPhase1();
 				break;
 
 			case LeaderPhase2:
-				LeaderTankPhase2();
+				leaderTankPhase2();
 				break;
 
 			case LeaderPhase3:
-				LeaderTankPhase3();
+				leaderTankPhase3();
 				break;
 
 			case Test:
@@ -44,51 +53,49 @@ public class TankLeader extends SmartTank {
 	// Scan 360
 	// Send ScannedEvent to teammate
 	// Calculate and plan the strategy
-	private void LeaderTankPhase1() {
+	private void leaderTankPhase1() {
 		setTurnRadarRight(1000);
 		if (enemyTankList.size() > 1) {
 			phase = Phase.LeaderPhase2;
 		}
 	}
 
-	private void LeaderTankPhase2() {
+	private void leaderTankPhase2() {
 		// Decide the focus target base on location and energy
-		CalculateFocusTarget();
+		calculateFocusTarget();
 
 		// scan 360
 		setTurnRadarRight(360);
 
 		// Keep 200px distance
-		MoveAndKeepDistance(new Point2D.Double(getFocusTarget().getX(), getFocusTarget().getY()), 200);
+		moveAndKeepDistance(new Point2D.Double(getFocusTarget().getX(), getFocusTarget().getY()), 200);
 
 		// Fire to the potencial target
-		Fire();
+		fire();
 
 		if (enemyTankList.size() == 1) {
-			if (this.getEnergy() > focusTarget.get_energy()) {
+			calculateFocusTarget();
+			if (this.getEnergy() > getFocusTarget().get_energy()) {
 				phase = Phase.LeaderPhase3;
 			}
-
-			focusTarget = enemyTankList.get(0);
 		}
 
 	}
 
-	private void CalculateFocusTarget() {
-		focusTarget = enemyTankList.get(0);
-		for (EnemyTank enemy : enemyTankList) {
-			if (focusTarget.get_distance() > enemy.get_distance()) {
-				focusTarget = enemy;
-			}
-		}
+	private void calculateFocusTarget() {
+		Collections.sort(enemyTankList, new EnergyComparator());
+		EnemyTank focus = enemyTankList.get(0);
+		setFocusTarget(focus);
+
+		sendMessage(new Message(MessageType.SendFocusTarget, focus.get_name()));
 	}
 
-	private void MoveAndKeepDistance(Point2D point, int distance) {
-		if (getFocusTarget().get_distance() > 300) {
+	private void moveAndKeepDistance(Point2D point, int distance) {
+		if (getFocusTarget().get_distance() > distanceMax) {
 			setTurnRightRadians(normalRelativeAngleRadians(
 					absoluteBearingRadians(getRobotLocation(), point) - getHeadingRadians()));
 			setAhead(getRobotLocation().distance(point) - distance);
-		} else if (getFocusTarget().get_distance() < 200) {
+		} else if (getFocusTarget().get_distance() < distanceMin) {
 			setTurnRightRadians(normalRelativeAngleRadians(
 					getHeadingRadians() - absoluteBearingRadians(getRobotLocation(), point)));
 			setAhead(distance - getRobotLocation().distance(point));
@@ -98,11 +105,11 @@ public class TankLeader extends SmartTank {
 
 			// circle our enemy
 			setTurnRight(getFocusTarget().get_bearing() + 90);
-			setAhead(1000 * moveDirection);
+			setAhead(300 * moveDirection);
 		}
 	}
 
-	private void Fire() {
+	private void fire() {
 		double firePower = Math.min(500 / getFocusTarget().get_distance(), 3);
 		double bulletSpeed = 20 - firePower * 3;
 		long time = (long) (getFocusTarget().get_distance() / bulletSpeed);
@@ -114,20 +121,25 @@ public class TankLeader extends SmartTank {
 		double absDeg = Helper.absoluteBearing(getX(), getY(), fx, fy);
 		setTurnGunRight(Helper.normalizeBearing(absDeg - getGunHeading()));
 
-		if (getGunHeat() == 0 && Math.abs(getGunTurnRemaining()) < 1) {
-			fire(firePower);
+		if (getGunHeat() == 0 && Math.abs(getGunTurnRemaining()) < 10) {
+			if (getEnergy() > energyRequireToFire) {
+				fire(firePower);
+			}
 		}
 
-		setFire(firePower);
+		if (getEnergy() > energyRequireToSetFire) {
+			setFire(firePower);
+		}
 	}
 
-	private void LeaderTankPhase3() {
+	private void leaderTankPhase3() {
+		setTurnRadarRight(360);
 		Point2D enemyPoint = new Point2D.Double(getFocusTarget().getX(), getFocusTarget().getY());
 		setTurnRightRadians(normalRelativeAngleRadians(
 				absoluteBearingRadians(getRobotLocation(), enemyPoint) - getHeadingRadians()));
 		setAhead(getRobotLocation().distance(enemyPoint) - 100);
 
-		Fire();
+		fire();
 	}
 
 	public void onScannedRobot(ScannedRobotEvent e) {
@@ -167,12 +179,4 @@ public class TankLeader extends SmartTank {
 		}
 	}
 
-	public void onRobotDeath(RobotDeathEvent e) {
-		for (EnemyTank enemy : enemyTankList) {
-			if (e.getName().equals(enemy.get_name())) {
-				enemyTankList.remove(enemy);
-				break;
-			}
-		}
-	}
 }

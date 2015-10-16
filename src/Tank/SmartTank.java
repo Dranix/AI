@@ -1,28 +1,27 @@
 package Tank;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import robocode.MessageEvent;
+import robocode.RobotDeathEvent;
 import robocode.ScannedRobotEvent;
 import robocode.TeamRobot;
 
 public class SmartTank extends TeamRobot {
 	protected List<EnemyTank> enemyTankList;
 	protected Phase phase;
-	protected EnemyTank focusTarget;
 
 	public void run() {
-		InitTank();
+		initTank();
 	}
 
 	public void onScannedRobot(ScannedRobotEvent e) {
 		// Save enemy movement to local database and send to team mate
-		SaveEnemyMovements(this, e);
+		saveEnemyMovements(this, e);
 	}
 
 	public void onMessageReceived(MessageEvent e) {
@@ -30,11 +29,12 @@ public class SmartTank extends TeamRobot {
 			Message message = (Message) e.getMessage();
 			switch (message.getMessageType()) {
 			case SendEnemyInformation:
-				EnemyTank enemy = (EnemyTank) message.getMessageObject();
-				for (EnemyTank eTank : enemyTankList) {
-					if (eTank.get_name().equals(enemy.get_name())) {
-						eTank.updateFromTeamate(enemy);
-					}
+				EnemyTank receiveObject = (EnemyTank) message.getMessageObject();
+				EnemyTank enemy = getEnemyTankByName(receiveObject.get_name());
+				if (enemy == null) {
+					enemyTankList.add(receiveObject);
+				} else {
+					enemy.updateFromTeamate(enemy);
 				}
 				break;
 
@@ -44,11 +44,16 @@ public class SmartTank extends TeamRobot {
 		}
 	}
 
-	public void onPaint(Graphics2D g) {
-
+	public void onRobotDeath(RobotDeathEvent e) {
+		for (EnemyTank enemy : enemyTankList) {
+			if (e.getName().equals(enemy.get_name())) {
+				enemyTankList.remove(enemy);
+				break;
+			}
+		}
 	}
 
-	private void InitTank() {
+	private void initTank() {
 		setBodyColor(Color.black);
 		setGunColor(Color.black);
 		setRadarColor(Color.black);
@@ -58,49 +63,29 @@ public class SmartTank extends TeamRobot {
 		enemyTankList = new ArrayList<EnemyTank>();
 	}
 
-	private void SaveEnemyMovements(TeamRobot ourRobot, ScannedRobotEvent e) {
+	private void saveEnemyMovements(TeamRobot ourRobot, ScannedRobotEvent e) {
 		if (isTeammate(e.getName())) {
 			return;
 		}
 
 		// check if exist
-		if (enemyTankList.size() == 0) {
+		EnemyTank enemy = getEnemyTankByName(e.getName());
+		if (enemy == null) {
 			EnemyTank newEnemy = new EnemyTank(ourRobot, e);
-
 			enemyTankList.add(newEnemy);
 		} else {
-			for (EnemyTank enemy : enemyTankList) {
-				if (enemy == null || !e.getName().equals(enemy.get_name())) {
-					EnemyTank newEnemy = new EnemyTank(ourRobot, e);
-
-					enemyTankList.add(newEnemy);
-					break;
-				} else if (e.getName().equals(enemy.get_name())) {
-					enemy.update(ourRobot, e);
-					SendMessage(new Message(MessageType.SendEnemyInformation, enemy));
-				}
-			}
+			enemy.update(ourRobot, e);
+			sendMessage(new Message(MessageType.SendEnemyInformation, enemy));
 		}
-
 	}
 
-	protected void SendMessage(Message message) {
+	protected void sendMessage(Message message) {
 		try {
 			broadcastMessage(message);
 		} catch (IOException ex) {
 			out.println("Unable to send order: ");
 			ex.printStackTrace(out);
 		}
-	}
-
-	protected EnemyTank getFocusTarget() {
-		for (EnemyTank enemy : enemyTankList) {
-			if (enemy.isFocus()) {
-				return enemy;
-			}
-		}
-
-		return enemyTankList.get(0);
 	}
 
 	protected void goTo(Point2D point) {
@@ -119,5 +104,36 @@ public class SmartTank extends TeamRobot {
 
 	protected Point2D getRobotLocation() {
 		return new Point2D.Double(getX(), getY());
+	}
+
+	protected EnemyTank getFocusTarget() {
+		if (enemyTankList.size() == 0) {
+			return null;
+		}
+
+		for (EnemyTank enemy : enemyTankList) {
+			if (enemy.isFocus()) {
+				return enemy;
+			}
+		}
+
+		return enemyTankList.get(0);
+	}
+
+	protected EnemyTank getEnemyTankByName(String tankName) {
+		for (EnemyTank enemy : enemyTankList) {
+			if (enemy.get_name().equals(tankName)) {
+				return enemy;
+			}
+		}
+
+		return null;
+	}
+
+	protected void setFocusTarget(EnemyTank enemyTank) {
+		for (EnemyTank tank : enemyTankList) {
+			tank.setFocus(false);
+		}
+		enemyTank.setFocus(true);
 	}
 }
