@@ -6,7 +6,7 @@ import java.util.List;
 
 import robocode.ScannedRobotEvent;
 import robocode.TeamRobot;
-
+//UPDATE
 public class EnemyTank implements java.io.Serializable {
 	private static final long serialVersionUID = 1L;
 
