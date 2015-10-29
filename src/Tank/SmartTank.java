@@ -11,6 +11,10 @@ import robocode.RobotDeathEvent;
 import robocode.ScannedRobotEvent;
 import robocode.TeamRobot;
 
+/**
+ * @author Dranix
+ *
+ */
 public class SmartTank extends TeamRobot {
 	protected List<EnemyTank> enemyTankList;
 	protected Phase phase;
@@ -25,22 +29,27 @@ public class SmartTank extends TeamRobot {
 	}
 
 	public void onMessageReceived(MessageEvent e) {
-		if (e.getMessage() instanceof Message) {
-			Message message = (Message) e.getMessage();
-			switch (message.getMessageType()) {
-			case SendEnemyInformation:
-				EnemyTank receiveObject = (EnemyTank) message.getMessageObject();
-				EnemyTank enemy = getEnemyTankByName(receiveObject.get_name());
-				if (enemy == null) {
-					enemyTankList.add(receiveObject);
-				} else {
-					enemy.updateFromTeamate(enemy);
-				}
-				break;
+		try {
+			if (e.getMessage() instanceof Message) {
+				Message message = (Message) e.getMessage();
+				switch (message.getMessageType()) {
+				case SendEnemyInformation:
+					EnemyTank receiveObject = (EnemyTank) message.getMessageObject();
+					EnemyTank enemy = getEnemyTankByName(receiveObject.get_name());
+					if (enemy == null) {
+						enemyTankList.add(receiveObject);
+					} else {
+						enemy.updateFromTeamate(enemy);
+					}
+					break;
 
-			default:
-				break;
+				default:
+					break;
+				}
 			}
+
+		} catch (Exception ex) {
+			System.err.println("Smart Tank: " + ex.getMessage());
 		}
 	}
 
@@ -121,9 +130,11 @@ public class SmartTank extends TeamRobot {
 	}
 
 	protected EnemyTank getEnemyTankByName(String tankName) {
-		for (EnemyTank enemy : enemyTankList) {
-			if (enemy.get_name().equals(tankName)) {
-				return enemy;
+		if (enemyTankList != null && enemyTankList.size() != 0) {
+			for (EnemyTank enemy : enemyTankList) {
+				if (enemy.get_name().equals(tankName)) {
+					return enemy;
+				}
 			}
 		}
 

@@ -1,6 +1,6 @@
 package Tank;
 
 public enum MessageType {
-	SendEnemyInformation, SendFocusTarget
+	SendEnemyInformation, SendFocusTarget, SendPhaseToMember, SendEnegerToLeader
 
 }
