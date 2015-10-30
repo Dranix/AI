@@ -6,6 +6,7 @@ import java.util.List;
 
 import robocode.ScannedRobotEvent;
 import robocode.TeamRobot;
+
 //UPDATE
 public class EnemyTank implements java.io.Serializable {
 	private static final long serialVersionUID = 1L;
@@ -185,9 +186,11 @@ public class EnemyTank implements java.io.Serializable {
 		this.heading = enemy.heading;
 		this.velocity = enemy.velocity;
 		this.absBearingDegree = enemy.absBearingDegree;
-		HistoryPoint point = enemy.history.get(history.size() - 1);
-		if (!this.history.contains(point)) {
-			this.history.add(point);
+		if (enemy.history != null && enemy.history.size() != 0) {
+			HistoryPoint point = enemy.history.get(history.size() - 1);
+			if (!this.history.contains(point)) {
+				this.history.add(point);
+			}
 		}
 	}
 
@@ -228,5 +231,17 @@ public class EnemyTank implements java.io.Serializable {
 
 	public void setFocus(boolean isFocus) {
 		this.isFocus = isFocus;
+	}
+
+	public boolean isStand() {
+		for (HistoryPoint p : history) {
+			if (turn - p.getTurn() < 10) {
+				if (Math.abs(p.getPoint().getX() - getX()) < 10 && Math.abs(p.getPoint().getY() - getY()) < 10) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 }
