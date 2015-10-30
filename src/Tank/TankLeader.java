@@ -21,6 +21,7 @@ public class TankLeader extends SmartTank {
 	private int moveDirection = 1;
 	private double tankMemberEnergy;
 
+	@Override
 	public void run() {
 		super.run();
 		phase = Phase.LeaderPhase1;
@@ -158,10 +159,12 @@ public class TankLeader extends SmartTank {
 		fire();
 	}
 
+	@Override
 	public void onScannedRobot(ScannedRobotEvent e) {
 		super.onScannedRobot(e);
 	}
 
+	@Override
 	public void onMessageReceived(MessageEvent e) {
 		super.onMessageReceived(e);
 		try {
@@ -181,6 +184,7 @@ public class TankLeader extends SmartTank {
 		}
 	}
 
+	@Override
 	public void onPaint(Graphics2D g) {
 		g.setColor(java.awt.Color.GREEN);
 		// Show target
@@ -197,14 +201,17 @@ public class TankLeader extends SmartTank {
 		}
 	}
 
+	@Override
 	public void onHitWall(HitWallEvent e) {
 		// moveDirection *= -1;
 	}
 
+	@Override
 	public void onHitRobot(HitRobotEvent e) {
 		moveDirection *= -1;
 	}
 
+	@Override
 	public void onRobotDeath(RobotDeathEvent e) {
 		super.onRobotDeath(e);
 		if (isTeammate(e.getName())) {

@@ -19,15 +19,18 @@ public class SmartTank extends TeamRobot {
 	protected List<EnemyTank> enemyTankList;
 	protected Phase phase;
 
+	@Override
 	public void run() {
 		initTank();
 	}
 
+	@Override
 	public void onScannedRobot(ScannedRobotEvent e) {
 		// Save enemy movement to local database and send to team mate
 		saveEnemyMovements(this, e);
 	}
 
+	@Override
 	public void onMessageReceived(MessageEvent e) {
 		try {
 			if (e.getMessage() instanceof Message) {
@@ -53,6 +56,7 @@ public class SmartTank extends TeamRobot {
 		}
 	}
 
+	@Override
 	public void onRobotDeath(RobotDeathEvent e) {
 		for (EnemyTank enemy : enemyTankList) {
 			if (e.getName().equals(enemy.get_name())) {

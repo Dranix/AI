@@ -13,6 +13,7 @@ public class TankMember extends SmartTank {
 	private int moveDirection = 1;
 	private int fx, fy;
 
+	@Override
 	public void run() {
 		super.run();
 		phase = Phase.MemberPhase1;
@@ -57,6 +58,7 @@ public class TankMember extends SmartTank {
 		fire();
 	}
 
+	@Override
 	public void onScannedRobot(ScannedRobotEvent e) {
 		super.onScannedRobot(e);
 
@@ -68,6 +70,7 @@ public class TankMember extends SmartTank {
 		setFire(2);
 	}
 
+	@Override
 	public void onMessageReceived(MessageEvent e) {
 		super.onMessageReceived(e);
 		try {
@@ -133,6 +136,7 @@ public class TankMember extends SmartTank {
 		}
 	}
 
+	@Override
 	public void onPaint(Graphics2D g) {
 		g.setColor(java.awt.Color.RED);
 		// Show target
@@ -149,10 +153,12 @@ public class TankMember extends SmartTank {
 		}
 	}
 
+	@Override
 	public void onHitWall(HitWallEvent e) {
 		moveDirection *= -1;
 	}
 
+	@Override
 	public void onHitRobot(HitRobotEvent e) {
 		moveDirection *= -1;
 	}
